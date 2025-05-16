@@ -1,0 +1,54 @@
+name: Commit Logger
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+  schedule:
+    - cron: "59 23 * * 5" #cada divendres a les 23 59 s'executa
+
+jobs:
+  log-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 5 #afegim mes commits per si de cas
+
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.20"
+
+      #creem un directopri log sempre que no existeixi
+      - name: Run script logger
+        run: |
+          mkdir -p log/
+          cd scripts
+          go run log_commits.go || exit 1
+
+      - name: Commit and push
+        run: |
+          git config --global user.name "Github Actions Bot"
+          git config --global user.email "actions@github.com"
+
+          #llistar els directoris
+          echo "---Arxius en el log/---"
+          ls -la log/
+
+          #filtre per commitejar si hi ha canvis
+          if [-n "$(find log/ -type f -name 'commits_*.txt')"]; then
+            git add log/
+            git commit -m "Auto: Add latest commits log"
+            git push
+          else
+            echo ""No hi ha arcxius nous per commitejar"
+          fi
+          
+          
+          
+          
+    
+    
+    
